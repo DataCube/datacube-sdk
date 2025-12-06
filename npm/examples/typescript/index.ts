@@ -2,7 +2,7 @@ import { DataCubeClient } from 'datacube-sdk';
 const client = new DataCubeClient({apiKey:"sdc_{YOUR_API_TOKEN_HERE}..."});
 
 //Funções nativas da API
-console.log(await client.help());
+client.help();
 //console.log(await client.getStatus());
 //console.log(await client.me());
 //

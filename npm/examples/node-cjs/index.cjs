@@ -1,7 +1,7 @@
 const { DataCubeClient } = require("datacube-sdk");
 const client = new DataCubeClient({ apiKey: "sdc_{YOUR_API_TOKEN_HERE}..." });
 
-client.help().then(console.log);
+client.help();
 //client.getStatus().then(console.log);
 //client.me().then(console.log);
 //

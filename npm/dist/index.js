@@ -99,7 +99,7 @@ export class DataCubeClient {
         });
 
         out += "\n";
-
+	console.log(out);
         return out;
     }
 

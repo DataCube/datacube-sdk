@@ -5,7 +5,7 @@ const client = new DataCubeClient({
 });
 
 (async () => {
-    console.log(await client.help());
+     client.help();
 //    console.log(await client.getStatus());
 //    console.log(await client.me());
 //
