@@ -52,6 +52,59 @@ export class DataCubeClient {
     execute(body) { return this.request("execute", { method: "POST", body: JSON.stringify(body) }); }
     executionStatus(id) { return this.request(`execute/${id}`); }
 
+
+    // ---------------------------------------------------------------------
+    // HELP METHOD
+    // ---------------------------------------------------------------------
+    help() {
+        const flows = this.getFlows();
+
+        const nativeMethods = [
+            "getStatus()",
+            "getUsage()",
+            "me()",
+            "execute(body)",
+            "executionStatus(id)",
+            "help()"
+        ];
+
+        const normalize = v => v?.toLowerCase().replace(/_/g, "-");
+
+        const directs = flows.filter(f => !f.provider);
+        const providers = {};
+
+        flows.forEach(f => {
+            if (f.provider) {
+                if (!providers[f.provider]) providers[f.provider] = [];
+                providers[f.provider].push(f);
+            }
+        });
+
+        let out = "\n📘 DataCube SDK Help\n";
+        out += "\nNATIVE METHODS:\n";
+        nativeMethods.forEach(m => out += "  • " + m + "\n");
+
+        out += "\nDIRECT FLOWS:\n";
+        directs.forEach(f => {
+            out += `  • ${f.slug} → client.${f.slug}({ ... })\n`;
+            out += `  • ${f.id} → client["${f.id}"]({ ... })\n`;
+        });
+
+        out += "\nPROVIDER FLOWS:\n";
+        Object.keys(providers).forEach(p => {
+            out += `\n${p}:\n`;
+            providers[p].forEach(f => {
+                out += `  • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
+            });
+        });
+
+        out += "\n";
+
+        return out;
+    }
+
+
+
     // ---------------------------------------------------------------------
     // ROOT PROXY
     // ---------------------------------------------------------------------
