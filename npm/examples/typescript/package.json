@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.21.0"
+  }
+}

@@ -1,0 +1,1 @@
+const fs=require('fs');const code=fs.readFileSync('dist/index.js','utf8');fs.writeFileSync('dist/index.cjs',code.replace(/export /g,''));
