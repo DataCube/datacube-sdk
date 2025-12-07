@@ -4,7 +4,7 @@ class DataCubeClient {
         this.apiKey = config.apiKey;
         this.flows = [];
 
-        return this._buildRootProxy();
+        return this.#buildRootProxy();
     }
 
     async request(path, options = {}) {
@@ -17,15 +17,36 @@ class DataCubeClient {
             }
         });
 
-        if (!res.ok) {
-            throw new Error(`Request failed ${res.status} → ${(await res.text())}`);
-        }
+        if (!res.ok) throw new Error(`Request failed ${res.status} → ${(await res.text())}`);
         return res.json();
+    }
+
+    stripAccents(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    normalizeProvider(name) {
+        if (!name) return null;
+        return this.stripAccents(name).toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    normalizeSlug(name) {
+        if (!name) return null;
+
+        let s = this.stripAccents(name).replace(/[^a-zA-Z0-9 ]/g, "");
+        const parts = s.trim().split(/\s+/);
+
+        return parts
+            .map((p, i) => {
+                const lower = p.toLowerCase();
+                return i === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+            })
+            .join("");
     }
 
     getFlows() {
         if (!this.flows.length) {
-            this.flows = [
+            let base = [
                 {
                     id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
                     provider_name: "Consultas de Veículos",
@@ -52,13 +73,14 @@ class DataCubeClient {
                     name: "teste AAA"
                 }
             ];
-            this.flows = this.flows.map(f => ({
-		id: f.id,
-		name: f.name,
-		provider_name: f.provider_name,
-		provider: this.normalizeProvider(f.provider_name),
-		slug: this.normalizeSlug(f.name)
-            }));	    
+
+            this.flows = base.map(f => ({
+                id: f.id,
+                name: f.name,
+                provider_name: f.provider_name,
+                provider: this.normalizeProvider(f.provider_name),
+                slug: this.normalizeSlug(f.name)
+            }));
         }
         return this.flows;
     }
@@ -66,260 +88,159 @@ class DataCubeClient {
     getStatus() { return this.request("status"); }
     getUsage() { return this.request("usage"); }
     me() { return this.request("me"); }
-
-    execute(body) {
-        return this.request("execute", {
-            method: "POST",
-            body: JSON.stringify(body)
-        });
-    }
-
+    execute(body) { return this.request("execute", { method: "POST", body: JSON.stringify(body) }); }
     executionStatus(id) { return this.request(`execute/${id}`); }
 
-    // ---------------------------------------------------------------------
-    // HELP METHOD
-    // ---------------------------------------------------------------------
     async help() {
-	const flows = this.getFlows();
+        const flows = this.getFlows();
 
-	const nativeMethods = [
-	    "getStatus()",
-	    "getUsage()",
-	    "me()",
-	    "execute(body)",
-	    "executionStatus(id)",
-	    "help()"
-	];
+        const nativeMethods = [
+            "getStatus()",
+            "getUsage()",
+            "me()",
+            "execute(body)",
+            "executionStatus(id)",
+            "help()"
+        ];
 
-	const normalize = v => v?.toLowerCase().replace(/_/g, "-");
+        const directs = flows.filter(f => !f.provider);
+        const providers = {};
+        flows.forEach(f => {
+            if (f.provider) {
+                if (!providers[f.provider]) providers[f.provider] = [];
+                providers[f.provider].push(f);
+            }
+        });
 
-	const directs = flows.filter(f => !f.provider);
-	const providers = {};
+        let out = "\n📘 DataCube SDK Help\n";
 
-	flows.forEach(f => {
-	    if (f.provider) {
-		if (!providers[f.provider]) providers[f.provider] = [];
-		providers[f.provider].push(f);
-	    }
-	});
+        out += "\n NATIVE METHODS:\n";
+        nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
 
-	let out = "\n📘 DataCube SDK Help\n";
+        out += "\n FLOWS:\n";
+        directs.forEach(f => {
+            const left = `   • ${f.name} →`;
+            const rightA = `client["${f.id}"]({ ... }) [recommended]`;
+            const rightB = `client.${f.slug}({ ... })`;
+            const pad = " ".repeat(left.length + 1);
 
-	// ----------------------------------------
-	// NATIVE METHODS
-	// ----------------------------------------
-	out += "\n NATIVE METHODS:\n";
-	nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
+            out += `${left} ${rightA}\n`;
+            out += `${pad}${rightB}\n\n`;
+        });
 
-	// ----------------------------------------
-	// DIRECT FLOWS
-	// ----------------------------------------
-	out += "\n FLOWS:\n";
+        out += "\n PROVIDER FLOWS:\n";
+        Object.keys(providers).forEach(provider => {
+            out += `\n   ${provider}:\n`;
 
-	// calcular padding baseado no maior slug
-	const maxSlugLen = Math.max(...directs.map(f => f.slug.length), 20);
+            providers[provider].forEach(f => {
+                const left = `     • ${f.name} →`;
+                const rightA = `client["${f.id}"]({ ... }) [recommended]`;
+                const rightB = `client.${provider}.${f.slug}({ ... })`;
+                const pad = " ".repeat(left.length + 1);
 
-	directs.forEach(f => {
-	    const slug = f.slug;
+                out += `${left} ${rightA}\n`;
+                out += `${pad}${rightB}\n\n`;
+            });
+        });
 
-	    const left = `   • ${f.name} →`;
-	    const rightA = `client["${f.id}"]({ ... }) [recommended]`;
-	    const rightB = `client.${slug}({ ... })`;
-
-	    const padding = " ".repeat(left.length + 1);
-
-	    out += `${left} ${rightA}\n`;
-	    out += `${padding}${rightB}\n\n`;
-	});
-
-
-	// ----------------------------------------
-	// PROVIDER FLOWS
-	// ----------------------------------------
-	out += "\n PROVIDER FLOWS:\n";
-
-	Object.keys(providers).forEach(provider => {
-	    out += `\n   ${provider}:\n`;
-
-	    providers[provider].forEach(f => {
-		// linha base (slug)
-		const left = `     • ${f.name} →`;
-		const rightA = `client["${f.id}"]({ ... }) [recommended]`;
-		const rightB = `client.${provider}.${f.slug}({ ... })`;
-
-		// padding automático para segunda linha
-		const padding = " ".repeat(left.length + 1);
-
-		out += `${left} ${rightA}\n`;
-		out += `${padding}${rightB}\n\n`;
-	    });
-	});
-
-	out += "\n";
-
-	console.log(out);
-	return out;
+        console.log(out);
+        return out;
     }
 
-  // ---------------------------------------------------------
-    // UTILITÁRIOS DE NORMALIZAÇÃO
-    // ---------------------------------------------------------
-    stripAccents(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    }
-
-    normalizeProvider(name) {
-        if (!name) return null;
-        return this.stripAccents(name)
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "");
-    }
-
-    normalizeSlug(name) {
-        if (!name) return null;
-
-        let s = this.stripAccents(name).replace(/[^a-zA-Z0-9 ]/g, "");
-        const parts = s.trim().split(/\s+/);
-
-        return parts
-            .map((p, i) => {
-                const lower = p.toLowerCase();
-                if (i === 0) return lower;
-                return lower.charAt(0).toUpperCase() + lower.slice(1);
-            })
-            .join("");
-    }
-
-
-    // ---------------------------------------------------------------------
-    // ROOT PROXY
-    // ---------------------------------------------------------------------
-    _buildRootProxy() {
+    #buildRootProxy() {
         const self = this;
-
         return new Proxy(this, {
             get(target, prop) {
                 if (prop in target) return target[prop];
-                return self._buildProviderOrDirectProxy(String(prop));
+                return self.#buildProviderOrDirectProxy(String(prop));
             }
         });
     }
 
-    /**
-     * Decide se é direct flow, provider, slug ou id
-     */
-    _buildProviderOrDirectProxy(name) {
+    #buildProviderOrDirectProxy(name) {
         const flows = this.getFlows();
         const normalize = v => v?.toLowerCase().replace(/_/g, "-");
 
-        // ------------------------------------------
-        // 1) PRIORIDADE MÁXIMA: MATCH POR ID
-        // ------------------------------------------
-        const matchById = flows.find(f => normalize(f.id) === normalize(name));
-        if (matchById) {
-            return (inputs = {}) =>
-                this._resolveDynamicCall(null, matchById.id, inputs);
+        const byId = flows.find(f => normalize(f.id) === normalize(name));
+        if (byId) {
+            return (inputs = {}, version = null) =>
+                this.#resolveDynamicCall(null, byId.id, inputs, version);
         }
 
-        // ------------------------------------------
-        // 2) FLOWS DIRETOS (SEM PROVIDER)
-        // ------------------------------------------
-        const directMatches = flows.filter(f =>
-            !f.provider &&
-            normalize(f.slug) === normalize(name)
+        const direct = flows.filter(f =>
+            !f.provider && normalize(f.slug) === normalize(name)
         );
 
-        if (directMatches.length === 1) {
-            return (inputs = {}) =>
-                this._resolveDynamicCall(null, directMatches[0].slug, inputs);
+        if (direct.length === 1) {
+            return (inputs = {}, version = null) =>
+                this.#resolveDynamicCall(null, direct[0].slug, inputs, version);
         }
 
-        if (directMatches.length > 1) {
-            const newest = directMatches.sort((a, b) => b.id.localeCompare(a.id))[0];
-            return (inputs = {}) =>
-                this._resolveDynamicCall(null, newest.slug, inputs);
+        if (direct.length > 1) {
+            const newest = direct.sort((a, b) => b.id.localeCompare(a.id))[0];
+            return (inputs = {}, version = null) =>
+                this.#resolveDynamicCall(null, newest.slug, inputs, version);
         }
 
-        // ------------------------------------------
-        // 3) Não é direct → tratar como provider
-        // ------------------------------------------
-        return this._buildProviderProxy(name);
+        return this.#buildProviderProxy(name);
     }
 
-    // ---------------------------------------------------------------------
-    // PROVIDER PROXY
-    // ---------------------------------------------------------------------
-    _buildProviderProxy(providerName) {
+    #buildProviderProxy(providerName) {
         const self = this;
-
         return new Proxy(function () {}, {
             get(_, subProp) {
-                return (inputs = {}) =>
-                    self._resolveDynamicCall(providerName, String(subProp), inputs);
+                return (inputs = {}, version = null) =>
+                    self.#resolveDynamicCall(providerName, String(subProp), inputs, version);
             },
             apply(_, __, args) {
-                return self._resolveDynamicCall(null, providerName, args[0] || {});
+                const inputs = args[0] || {};
+                const version = args[1] || null;
+                return self.#resolveDynamicCall(null, providerName, inputs, version);
             }
         });
     }
 
-    // ---------------------------------------------------------------------
-    // RESOLVER CHAMADAS DINÂMICAS
-    // ---------------------------------------------------------------------
-    _resolveDynamicCall(provider, name, inputs) {
+    #resolveDynamicCall(provider, name, inputs, version = null) {
         const flows = this.getFlows();
         const normalize = v => v?.toLowerCase().replace(/_/g, "-");
 
         const normName = normalize(name);
         const normProvider = normalize(provider);
 
-        // -------------------------------------------------------
-        // 1) VIA PROVIDER → PRIORIDADE TOTAL PARA O PROVIDER
-        // -------------------------------------------------------
+        // Provider primeiro
         if (provider) {
-            const providerMatch = flows.find(f =>
+            const match = flows.find(f =>
                 f.provider &&
                 normalize(f.provider) === normProvider &&
                 (normalize(f.slug) === normName || normalize(f.id) === normName)
             );
 
-            if (providerMatch) {
-                return this.execute({
-                    flow_id: providerMatch.id,
-                    inputs: inputs || {}
-                });
-            }
+            if (!match) throw new Error(`Flow '${name}' not found under provider '${provider}'`);
 
-            throw new Error(
-                `Flow '${name}' not found under provider '${provider}'.`
-            );
+            const payload = { flow_id: match.id, inputs };
+            if (version) payload.version = version;
+            return this.execute(payload);
         }
 
-        // -------------------------------------------------------
-        // 2) DIRECT CALL → PRIORIDADE PARA DIRECT FLOWS
-        // -------------------------------------------------------
-        const directMatches = flows.filter(f =>
+        // Direct
+        const direct = flows.filter(f =>
             !f.provider &&
             (normalize(f.slug) === normName || normalize(f.id) === normName)
         );
 
-        if (directMatches.length > 0) {
-            const newest = directMatches.sort((a, b) => b.id.localeCompare(a.id))[0];
-            return this.execute({
-                flow_id: newest.id,
-                inputs: inputs || {}
-            });
+        if (direct.length) {
+            const newest = direct.sort((a, b) => b.id.localeCompare(a.id))[0];
+            const payload = { flow_id: newest.id, inputs };
+            if (version) payload.version = version;
+            return this.execute(payload);
         }
 
-        // -------------------------------------------------------
-        // 3) FALLBACK: MATCH POR ID (independente de provider)
-        // -------------------------------------------------------
+        // Por ID global
         const idMatch = flows.find(f => normalize(f.id) === normName);
         if (idMatch) {
-            return this.execute({
-                flow_id: idMatch.id,
-                inputs: inputs || {}
-            });
+            const payload = { flow_id: idMatch.id, inputs };
+            if (version) payload.version = version;
+            return this.execute(payload);
         }
 
         throw new Error(`Flow not found: name=${name}`);
@@ -327,4 +248,3 @@ class DataCubeClient {
 }
 
 module.exports = { DataCubeClient };
-
