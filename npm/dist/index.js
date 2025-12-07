@@ -18,7 +18,7 @@ export class DataCubeClient {
         });
 
         if (!res.ok) {
-            throw new Error(`Request failed ${res.status}`);
+	    throw new Error(`Request failed ${res.status} → ${(await res.text())}`);
         }
         return res.json();
     }
