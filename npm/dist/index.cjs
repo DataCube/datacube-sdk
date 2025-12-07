@@ -89,9 +89,9 @@ class DataCubeClient {
 
         let out = "\n📘 DataCube SDK Help\n";
         out += "\nNATIVE METHODS:\n";
-        nativeMethods.forEach(m => out += "  • " + m + "\n");
+        nativeMethods.forEach(m => out += `  • ${m} → client.${m}\n`);
 
-        out += "\nDIRECT FLOWS:\n";
+        out += "\nFLOWS:\n";
         directs.forEach(f => {
             out += `  • ${f.slug} → client.${f.slug}({ ... })\n`;
             out += `  • ${f.id} → client["${f.id}"]({ ... })\n`;
