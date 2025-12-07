@@ -93,8 +93,8 @@ await client["consulta-cnh-paran-completa-1764938995458-45nr1u"]({
 
 
 🆕 Versão opcional (param extra)
-```
 Todos os métodos aceitam um segundo parâmetro opcional, que será enviado como "version":
+```
 await client.myExampleFlow(
     { cpf: "123" },
     "1.0.23"
