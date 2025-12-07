@@ -139,8 +139,8 @@ export class DataCubeClient {
         out += "\n FLOWS:\n";
         directs.forEach(f => {
             const left = `   • ${f.name} →`;
-            const rightA = `client["${f.id}"]({ ... }) [recommended]`;
-            const rightB = `client.${f.slug}({ ... })`;
+            const rightA = `client["${f.id}"](inputs={ ... }, version="latest") [recommended]`;
+            const rightB = `client.${f.slug}(inputs={ ... }, version="latest")`;
 
             const pad = " ".repeat(left.length + 1);
             out += `${left} ${rightA}\n`;
@@ -154,8 +154,8 @@ export class DataCubeClient {
 
             providers[p].forEach(f => {
                 const left = `     • ${f.name} →`;
-                const rightA = `client["${f.id}"]({ ... }) [recommended]`;
-                const rightB = `client.${p}.${f.slug}({ ... })`;
+                const rightA = `client["${f.id}"](inputs={ ... }, version="latest") [recommended]`;
+                const rightB = `client.${p}.${f.slug}(inputs={ ... }, version="latest")`;
 
                 const pad = " ".repeat(left.length + 1);
                 out += `${left} ${rightA}\n`;
