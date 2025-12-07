@@ -113,7 +113,7 @@ export class DataCubeClient {
 	directs.forEach(f => {
 	    const slug = f.slug;
 
-	    const left = `   • ${slug} →`;
+	    const left = `   • ${f.name} →`;
 	    const rightA = `client["${f.id}"]({ ... }) [recommended]`;
 	    const rightB = `client.${slug}({ ... })`;
 
@@ -132,7 +132,7 @@ export class DataCubeClient {
 	    out += `\n   ${provider}:\n`;
 
 	    providers[provider].forEach(f => {
-		const left = `     • ${f.slug} →`;
+		const left = `     • ${f.name} →`;
 		const rightA = `client["${f.id}"]({ ... }) [recommended]`;
 		const rightB = `client.${provider}.${f.slug}({ ... })`;
 
