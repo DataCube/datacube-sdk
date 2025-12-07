@@ -59,6 +59,11 @@ export class DataCubeClient {
         if (!this.flows.length) {
             let base = [
                 {
+                    id: "consulta-cnh-completa-1764938995458-45nr1u",
+                    provider_name: "DataCube",
+                    name: "Consulta Cnh Completa"
+                },
+                {
                     id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
                     provider_name: "Consultas de Veículos",
                     name: "Consulta Cnh Paraná Completa"
@@ -148,19 +153,36 @@ export class DataCubeClient {
         });
 
         // PROVIDERS
+        out += "\n DATACUBE FLOWS:\n";
+        Object.keys(providers).forEach(p => {
+	    if(p == "datacube"){
+		providers[p].forEach(f => {
+		    const left = `     • ${f.name} →`;
+		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
+		    const rightB = `client.${p}.${f.slug}(inputs={ ... }, version=null)`;
+
+		    const pad = " ".repeat(left.length + 1);
+		    out += `${left} ${rightA}\n`;
+		    out += `${pad}${rightB}\n\n`;
+		});
+	    }
+        });
+
+        // PROVIDERS
         out += "\n PROVIDER FLOWS:\n";
         Object.keys(providers).forEach(p => {
-            out += `\n   ${p}:\n`;
+	    if(p != "datacube"){
+		out += `\n   ${p}:\n`;
+		providers[p].forEach(f => {
+		    const left = `     • ${f.name} →`;
+		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
+		    const rightB = `client.${p}.${f.slug}(inputs={ ... }, version=null)`;
 
-            providers[p].forEach(f => {
-                const left = `     • ${f.name} →`;
-                const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
-                const rightB = `client.${p}.${f.slug}(inputs={ ... }, version=null)`;
-
-                const pad = " ".repeat(left.length + 1);
-                out += `${left} ${rightA}\n`;
-                out += `${pad}${rightB}\n\n`;
-            });
+		    const pad = " ".repeat(left.length + 1);
+		    out += `${left} ${rightA}\n`;
+		    out += `${pad}${rightB}\n\n`;
+		});
+	    }
         });
 
         console.log(out);

@@ -48,6 +48,11 @@ class DataCubeClient {
         if (!this.flows.length) {
             let base = [
                 {
+                    id: "consulta-cnh-completa-1764938995458-45nr1u",
+                    provider_name: "DataCube",
+                    name: "Consulta Cnh Completa"
+                },
+                {
                     id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
                     provider_name: "Consultas de Veículos",
                     name: "Consulta Cnh Paraná Completa"
@@ -128,19 +133,36 @@ class DataCubeClient {
             out += `${pad}${rightB}\n\n`;
         });
 
+        out += "\n DATACUBE FLOWS:\n";
+        Object.keys(providers).forEach(provider => {
+	    if(provider == "datacube"){
+		providers[provider].forEach(f => {
+		    const left = `     • ${f.name} →`;
+		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
+		    const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
+		    const pad = " ".repeat(left.length + 1);
+
+		    out += `${left} ${rightA}\n`;
+		    out += `${pad}${rightB}\n\n`;
+		});
+	    }
+        });
+
         out += "\n PROVIDER FLOWS:\n";
         Object.keys(providers).forEach(provider => {
-            out += `\n   ${provider}:\n`;
+	    if(provider != "datacube"){
+		out += `\n   ${provider}:\n`;
 
-            providers[provider].forEach(f => {
-                const left = `     • ${f.name} →`;
-                const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
-                const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
-                const pad = " ".repeat(left.length + 1);
+		providers[provider].forEach(f => {
+		    const left = `     • ${f.name} →`;
+		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
+		    const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
+		    const pad = " ".repeat(left.length + 1);
 
-                out += `${left} ${rightA}\n`;
-                out += `${pad}${rightB}\n\n`;
-            });
+		    out += `${left} ${rightA}\n`;
+		    out += `${pad}${rightB}\n\n`;
+		});
+	    }
         });
 
         console.log(out);
