@@ -28,30 +28,37 @@ export class DataCubeClient {
             this.flows = [
                 {
                     id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
-                    provider: "consultasdeveiculos",
-                    slug: "ConsultaCnhParanaCompleta"
+                    provider_name: "Consultas de Veículos",
+                    name: "Consulta Cnh Paraná Completa"
                 },
                 {
                     id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
-                    provider: "teste",
-                    slug: "ConsultaCnhParanaCompleta"
+                    provider_name: "teste",
+                    name: "Consulta Cnh Paraná Completa"
                 },
                 {
                     id: "consulta-cnh-ceara-completa-1764938995458-45nr1u",
-                    provider: "consultasdeveiculos",
-                    slug: "ConsultaCnhCearaCompleta"
+                    provider_name: "Consultas de Veículos",
+                    name: "Consulta Cnh Ceará Completa"
                 },
                 {
                     id: "teste-meu-1765010906589-46sxz2",
-                    provider: null,
-                    slug: "testeMeu"
+                    provider_name: null,
+                    name: "teste Meu"
                 },
                 {
                     id: "aaa-meu-1765010906589-46sxz2",
-                    provider: null,
-                    slug: "testeAAA"
+                    provider_name: null,
+                    name: "teste AAA"
                 }
             ];
+	    this.flows = this.flows.map(f => ({
+		id: f.id,
+		name: f.name,
+		provider_name: f.provider_name,
+		provider: this.normalizeProvider(f.provider_name),
+		slug: this.normalizeSlug(f.name)
+	    }));	    
         }
         return this.flows;
     }
@@ -141,6 +148,50 @@ export class DataCubeClient {
 	console.log(out);
 	return out;
     }
+    
+    
+    // ---------------------------------------------------------
+    // UTILITÁRIOS DE NORMALIZAÇÃO
+    // ---------------------------------------------------------    
+    // Remove acentos
+    stripAccents(str) {
+	return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Provider: minúsculo, sem espaços, sem especiais
+    normalizeProvider(name) {
+	if (!name) return null;
+	let s = this.stripAccents(name)
+	    .toLowerCase()
+	    .replace(/[^a-z0-9]/g, ""); // remove tudo que não é letra ou número
+	return s;
+    }
+
+    // Slug: camelCase gerado a partir do nome completo
+    normalizeSlug(name) {
+	if (!name) return null;
+
+	// remove acentos
+	let s = this.stripAccents(name);
+
+	// remove qualquer caractere que não seja letra/número/espaço
+	s = s.replace(/[^a-zA-Z0-9 ]/g, "");
+
+	// quebra palavras
+	const parts = s.trim().split(/\s+/);
+
+	// transforma em camelCase
+	const camel = parts
+	    .map((p, i) => {
+		const lower = p.toLowerCase();
+		if (i === 0) return lower; // primeira palavra minúscula
+		return lower.charAt(0).toUpperCase() + lower.slice(1);
+	    })
+	    .join("");
+
+	return camel;
+    }
+    
 
 
 

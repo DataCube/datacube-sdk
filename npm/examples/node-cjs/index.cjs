@@ -7,6 +7,6 @@ client.help();
 //
 ////client.testeMeu({ cpf: "123" }).then(console.log);
 //
-//client.consultasdeveiculos.ConsultaCnhParanaCompleta({ cpf:"123", numeroRegistro:"123", dataValidade:'25/04/2033' }).then(console.log);
+//client.consultasdeveiculos.consultaCnhParanaCompleta({ cpf:"123", numeroRegistro:"123", dataValidade:'25/04/2033' }).then(console.log);
 //client["consulta-cnh-paran-completa-1764938995458-45nr1u"]({ cpf:"123", numeroRegistro:"123", dataValidade:'25/04/2033' }).then(console.log);
 

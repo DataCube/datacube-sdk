@@ -11,7 +11,7 @@ const client = new DataCubeClient({
 //
 ////    console.log(await client.testeMeu({ cpf: "123" }));
 //
-//    console.log(await client.consultasdeveiculos.ConsultaCnhParanaCompleta({
+//    console.log(await client.consultasdeveiculos.consultaCnhParanaCompleta({
 //        cpf: "123",
 //        numeroRegistro: "123",
 //        dataValidade: "01/01/2030"
