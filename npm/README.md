@@ -14,17 +14,6 @@ YARN →  yarn add datacube-sdk
 PNPM →  pnpm add datacube-sdk
 ```
 
-## 📦 CJS
-// example.cjs
-```
-const { DataCubeClient } = require("datacube-sdk");
-const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
-
-(async () => {
-    // Exibe lista de métodos e fluxos disponíveis
-    await client.help();
-})();
-```
 
 ## 📦 JAVASCRIPT
 // example.js
@@ -36,6 +25,17 @@ const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
 client.help();
 ```
 
+## 📦 TYPESCRIPT
+// example.ts
+```
+import { DataCubeClient } from "datacube-sdk";
+const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
+
+(async () => {
+    // Exibe lista de métodos e fluxos disponíveis
+    await client.help();
+})();
+```
 
 ## 📦 ESM
 // example.mjs
@@ -47,10 +47,10 @@ const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
 await client.help();
 ```
 
-## 📦 TYPESCRIPT
-// example.ts
+## 📦 CJS
+// example.cjs
 ```
-import { DataCubeClient } from "datacube-sdk";
+const { DataCubeClient } = require("datacube-sdk");
 const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
 
 (async () => {
