@@ -11,7 +11,7 @@ Você pode instalar usando **npm**, **yarn** ou **pnpm** — todos utilizam o me
 ```bash
 NPM  →  npm install datacube-sdk
 YARN →  yarn add datacube-sdk
-PNPM →  add datacube-sdk
+PNPM →  pnpm add datacube-sdk
 ```
 
 ## 📦 CJS
