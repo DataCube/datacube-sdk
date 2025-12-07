@@ -81,21 +81,20 @@ export class DataCubeClient {
         });
 
         let out = "\n📘 DataCube SDK Help\n";
-        out += "\nNATIVE METHODS:\n";
-//        nativeMethods.forEach(m => out += "  • " + m + "\n");
-	nativeMethods.forEach(m => out += `  • ${m} → client.${m}\n`);
+        out += "\n NATIVE METHODS:\n";
+	nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
 
-        out += "\nFLOWS:\n";
+        out += "\n FLOWS:\n";
         directs.forEach(f => {
-            out += `  • ${f.slug} → client.${f.slug}({ ... })\n`;
-            out += `  • ${f.id} → client["${f.id}"]({ ... })\n`;
+            out += `   • ${f.slug} → client.${f.slug}({ ... })\n`;
+            out += `   • ${f.id} → client["${f.id}"]({ ... })\n`;
         });
 
-        out += "\nPROVIDER FLOWS:\n";
+        out += "\n PROVIDER FLOWS:\n";
         Object.keys(providers).forEach(p => {
-            out += `\n  ${p}:\n`;
+            out += `\n   ${p}:\n`;
             providers[p].forEach(f => {
-                out += `    • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
+                out += `     • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
             });
         });
 
