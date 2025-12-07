@@ -13,10 +13,9 @@ NPM  →  npm install datacube-sdk
 YARN →  yarn add datacube-sdk
 PNPM →  pnpm add datacube-sdk
 ```
-
-
-
-
+ 
+ 
+ 
 ## 📦 JAVASCRIPT
 // example.js
 ```
@@ -60,17 +59,16 @@ const client = new DataCubeClient({apiKey: "sdc_{YOUR_API_TOKEN_HERE}..."});
     await client.help();
 })();
 ```
-
-
-
-
+ 
+ 
+ 
 📚 Como chamar fluxos
 
 O SDK suporta 3 formas de execução:
 
 1️⃣ Chamada direta (slug)
 ```
-await client.myExapleFlow({
+await client.myExampleFlow({
     cpf: "123"
 });
 ```
@@ -97,7 +95,7 @@ await client["consulta-cnh-paran-completa-1764938995458-45nr1u"]({
 🆕 Versão opcional (param extra)
 ```
 Todos os métodos aceitam um segundo parâmetro opcional, que será enviado como "version":
-await client.myExapleFlow(
+await client.myExampleFlow(
     { cpf: "123" },
     "1.0.23"
 );
