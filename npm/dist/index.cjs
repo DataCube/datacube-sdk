@@ -99,9 +99,9 @@ class DataCubeClient {
 
         out += "\nPROVIDER FLOWS:\n";
         Object.keys(providers).forEach(p => {
-            out += `\n${p}:\n`;
+            out += `\n  ${p}:\n`;
             providers[p].forEach(f => {
-                out += `  • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
+                out += `    • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
             });
         });
 
