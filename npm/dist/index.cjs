@@ -32,14 +32,24 @@ class DataCubeClient {
                     slug: "ConsultaCnhParanaCompleta"
                 },
                 {
+                    id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
+                    provider: "teste",
+                    slug: "ConsultaCnhParanaCompleta"
+                },
+                {
+                    id: "consulta-cnh-ceara-completa-1764938995458-45nr1u",
+                    provider: "consultasdeveiculos",
+                    slug: "ConsultaCnhCearaCompleta"
+                },
+                {
                     id: "teste-meu-1765010906589-46sxz2",
                     provider: null,
                     slug: "testeMeu"
                 },
                 {
-                    id: "teste-meu-1765010906589-46sxz2",
+                    id: "aaa-meu-1765010906589-46sxz2",
                     provider: null,
-                    slug: "ConsultaCnhParanaCompleta"
+                    slug: "testeAAA"
                 }
             ];
         }
@@ -62,52 +72,88 @@ class DataCubeClient {
     // ---------------------------------------------------------------------
     // HELP METHOD
     // ---------------------------------------------------------------------
-    async help() {
-        const flows = this.getFlows();
+async help() {
+    const flows = this.getFlows();
 
-        const nativeMethods = [
-            "getStatus()",
-            "getUsage()",
-            "me()",
-            "execute(body)",
-            "executionStatus(id)",
-            "help()"
-        ];
+    const nativeMethods = [
+        "getStatus()",
+        "getUsage()",
+        "me()",
+        "execute(body)",
+        "executionStatus(id)",
+        "help()"
+    ];
 
-        const normalize = v => v?.toLowerCase().replace(/_/g, "-");
+    const normalize = v => v?.toLowerCase().replace(/_/g, "-");
 
-        const directs = flows.filter(f => !f.provider);
-        const providers = {};
+    const directs = flows.filter(f => !f.provider);
+    const providers = {};
 
-        flows.forEach(f => {
-            if (f.provider) {
-                if (!providers[f.provider]) providers[f.provider] = [];
-                providers[f.provider].push(f);
-            }
+    flows.forEach(f => {
+        if (f.provider) {
+            if (!providers[f.provider]) providers[f.provider] = [];
+            providers[f.provider].push(f);
+        }
+    });
+
+    let out = "\n📘 DataCube SDK Help\n";
+
+    // ----------------------------------------
+    // NATIVE METHODS
+    // ----------------------------------------
+    out += "\n NATIVE METHODS:\n";
+    nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
+
+    // ----------------------------------------
+    // DIRECT FLOWS
+    // ----------------------------------------
+    out += "\n FLOWS:\n";
+
+    // calcular padding baseado no maior slug
+    const maxSlugLen = Math.max(...directs.map(f => f.slug.length), 20);
+
+    directs.forEach(f => {
+	const slug = f.slug;
+
+	const left = `   • ${slug} →`;
+	const rightA = `client["${f.id}"]({ ... }) [recommended]`;
+	const rightB = `client.${slug}({ ... })`;
+
+	const padding = " ".repeat(left.length + 1);
+
+	out += `${left} ${rightA}\n`;
+	out += `${padding}${rightB}\n\n`;
+    });
+
+
+    // ----------------------------------------
+    // PROVIDER FLOWS
+    // ----------------------------------------
+    out += "\n PROVIDER FLOWS:\n";
+
+    Object.keys(providers).forEach(provider => {
+        out += `\n   ${provider}:\n`;
+
+        providers[provider].forEach(f => {
+            // linha base (slug)
+            const left = `     • ${f.slug} →`;
+            const rightA = `client["${f.id}"]({ ... }) [recommended]`;
+            const rightB = `client.${provider}.${f.slug}({ ... })`;
+
+            // padding automático para segunda linha
+            const padding = " ".repeat(left.length + 1);
+
+            out += `${left} ${rightA}\n`;
+            out += `${padding}${rightB}\n\n`;
         });
+    });
 
-        let out = "\n📘 DataCube SDK Help\n";
-        out += "\n NATIVE METHODS:\n";
-        nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
+    out += "\n";
 
-        out += "\n FLOWS:\n";
-        directs.forEach(f => {
-            out += `   • ${f.slug} → client.${f.slug}({ ... })\n`;
-            out += `   • ${f.id} → client["${f.id}"]({ ... })\n`;
-        });
+    console.log(out);
+    return out;
+}
 
-        out += "\n PROVIDER FLOWS:\n";
-        Object.keys(providers).forEach(p => {
-            out += `\n   ${p}:\n`;
-            providers[p].forEach(f => {
-                out += `     • ${f.slug} → client.${p}.${f.slug}({ ... })\n`;
-            });
-        });
-
-        out += "\n";
-	console.log(out);
-        return out;
-    }
 
     // ---------------------------------------------------------------------
     // ROOT PROXY
