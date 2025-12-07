@@ -13,6 +13,7 @@ class DataCubeClient {
             headers: {
                 "X-Api-Key": this.apiKey,
                 "Content-Type": "application/json",
+		"User-Agent": "DataCube-SDK (CJS)",
                 ...(options.headers || {})
             }
         });
