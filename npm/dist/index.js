@@ -218,7 +218,8 @@ export class DataCubeClient {
 	// Final
 	// -------------------------------------------------------
 	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-	out += "💡 DICA: Você também pode chamar qualquer fluxo pelo seu ID.\n";
+	out += "💡 RECOMMENDATION: Whenever possible, call flows by their ID.\n";
+	out += "   This prevents your code from breaking if the flow name (slug) changes.\n";
 	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
 	console.log(out);
