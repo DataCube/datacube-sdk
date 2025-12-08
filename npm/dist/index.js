@@ -1,6 +1,6 @@
 export class DataCubeError extends Error {
     constructor(message, context = {}) {
-        super(message);
+        super(`⚠️   ${message}`);
         this.name = "DataCubeError";
         this.context = context;
     }
