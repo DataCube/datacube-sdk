@@ -115,80 +115,116 @@ export class DataCubeClient {
     // HELP()
     // ---------------------
     async help() {
-        const flows = this.getFlows();
+	const flows = this.getFlows();
 
-        const nativeMethods = [
-            "getStatus()",
-            "getUsage()",
-            "me()",
-            "execute(body)",
-            "executionStatus(id)",
-            "help()"
-        ];
+	const nativeMethods = [
+	    "getStatus()",
+	    "getUsage()",
+	    "me()",
+	    "execute(body)",
+	    "executionStatus(id)",
+	    "help()"
+	];
 
-        const directs = flows.filter(f => !f.provider);
-        const providers = {};
-        flows.forEach(f => {
-            if (f.provider) {
-                if (!providers[f.provider]) providers[f.provider] = [];
-                providers[f.provider].push(f);
-            }
-        });
-
-        let out = "\n📘 DataCube SDK Help\n";
-
-        // NATIVOS
-        out += "\n NATIVE METHODS:\n";
-        nativeMethods.forEach(m => out += `   • ${m} → client.${m}\n`);
-
-        // DIRECT FLOWS
-        out += "\n FLOWS:\n";
-        directs.forEach(f => {
-            const left = `   • ${f.name} →`;
-            const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
-            const rightB = `client.${f.slug}(inputs={ ... }, version=null)`;
-
-            const pad = " ".repeat(left.length + 1);
-            out += `${left} ${rightA}\n`;
-            out += `${pad}${rightB}\n\n`;
-        });
-
-        // PROVIDERS
-        out += "\n DATACUBE FLOWS:\n";
-        Object.keys(providers).forEach(p => {
-	    if(p == "datacube"){
-		providers[p].forEach(f => {
-		    const left = `     • ${f.name} →`;
-		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
-		    const rightB = `client.${p}.${f.slug}(inputs={ ... }, version=null)`;
-
-		    const pad = " ".repeat(left.length + 1);
-		    out += `${left} ${rightA}\n`;
-		    out += `${pad}${rightB}\n\n`;
-		});
+	const directs = flows.filter(f => !f.provider);
+	const providers = {};
+	flows.forEach(f => {
+	    if (f.provider) {
+		if (!providers[f.provider]) providers[f.provider] = [];
+		providers[f.provider].push(f);
 	    }
-        });
+	});
 
-        // PROVIDERS
-        out += "\n PROVIDER FLOWS:\n";
-        Object.keys(providers).forEach(p => {
-	    if(p != "datacube"){
-		out += `\n   ${p}:\n`;
-		providers[p].forEach(f => {
-		    const left = `     • ${f.name} →`;
-		    const rightA = `client["${f.id}"](inputs={ ... }, version=null) [recommended]`;
-		    const rightB = `client.${p}.${f.slug}(inputs={ ... }, version=null)`;
+	let out = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+	out += "📘  DATACUBE SDK — COMMAND REFERENCE\n";
+	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
 
-		    const pad = " ".repeat(left.length + 1);
-		    out += `${left} ${rightA}\n`;
-		    out += `${pad}${rightB}\n\n`;
-		});
-	    }
-        });
+	// -------------------------------------------------------
+	// NATIVE METHODS
+	// -------------------------------------------------------
+	out += "\n🔧  NATIVE METHODS\n";
+	out += "----------------------------------------------\n";
+	nativeMethods.forEach(m => {
+	    out += `   • ${m.padEnd(22)} → client.${m}\n`;
+	});
 
-        console.log(out);
-        return out;
+	// -------------------------------------------------------
+	// DIRECT FLOWS
+	// -------------------------------------------------------
+	out += "\n🚀  DIRECT FLOWS\n";
+	out += "----------------------------------------------\n";
+
+	if (directs.length === 0) {
+	    out += "   • Nenhum fluxo direto encontrado.\n";
+	} else {
+	    directs.forEach(f => {
+		const left = `   • ${f.name} →`;
+		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
+		const rightB = `client.${f.slug}(inputs={ ... }, version=null)`;
+		const pad = " ".repeat(left.length + 1);
+
+		out += `${left} ${rightA}\n`;
+		out += `${pad}${rightB}\n\n`;
+	    });
+	}
+
+	// -------------------------------------------------------
+	// DATACUBE PROVIDER (destaque separado)
+	// -------------------------------------------------------
+	out += "\n⚡  DATACUBE FLOWS\n";
+	out += "----------------------------------------------\n";
+
+	if (providers["datacube"]) {
+	    providers["datacube"].forEach(f => {
+		const left = `   • ${f.name} →`;
+		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
+		const rightB = `client.datacube.${f.slug}(inputs={ ... }, version=null)`;
+		const pad = " ".repeat(left.length + 1);
+
+		out += `${left} ${rightA}\n`;
+		out += `${pad}${rightB}\n\n`;
+	    });
+	} else {
+	    out += "   • Nenhum fluxo DataCube encontrado.\n";
+	}
+
+	// -------------------------------------------------------
+	// PROVIDERS GERAIS
+	// -------------------------------------------------------
+	out += "\n🏭  PROVIDER FLOWS\n";
+	out += "----------------------------------------------\n";
+
+	const otherProviders = Object.keys(providers).filter(p => p !== "datacube");
+
+	if (otherProviders.length === 0) {
+	    out += "   • Nenhum provider encontrado.\n";
+	}
+
+	otherProviders.forEach(provider => {
+	    out += `\n🔹  ${provider}\n`;
+
+	    providers[provider].forEach(f => {
+		const left = `     • ${f.name} →`;
+		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
+		const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
+		const pad = " ".repeat(left.length + 1);
+
+		out += `${left} ${rightA}\n`;
+		out += `${pad}${rightB}\n\n`;
+	    });
+	});
+
+	// -------------------------------------------------------
+	// Final
+	// -------------------------------------------------------
+	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+	out += "💡 DICA: Você também pode chamar qualquer fluxo pelo seu ID.\n";
+	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+
+	console.log(out);
+	return out;
     }
+
 
     // ---------------------
     // PROXY ROOT
