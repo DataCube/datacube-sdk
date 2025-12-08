@@ -3,6 +3,10 @@ export class DataCubeError extends Error {
         super(`⚠️   ${message}`);
         this.name = "DataCubeError";
         this.context = context;
+        // Captura do stack trace sem incluir o construtor
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, DataCubeError);
+        }	
     }
 }
 export class DataCubeClient {
