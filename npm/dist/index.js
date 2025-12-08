@@ -1,3 +1,10 @@
+export class DataCubeError extends Error {
+    constructor(message, context = {}) {
+        super(message);
+        this.name = "DataCubeError";
+        this.context = context;
+    }
+}
 export class DataCubeClient {
     constructor(config) {
         this.apiUrl = "https://api.datacube.com.br/v1/";
@@ -19,7 +26,7 @@ export class DataCubeClient {
         });
 
         if (!res.ok) {
-            throw new Error(`Request failed ${res.status} → ${(await res.text())}`);
+            throw new DataCubeError(`Request failed ${res.status} → ${(await res.text())}`);
         }
         return res.json();
     }
@@ -304,7 +311,7 @@ export class DataCubeClient {
                 (normalize(f.slug) === normName || normalize(f.id) === normName)
             );
 
-            if (!match) throw new Error(`Flow '${name}' not found under provider '${provider}'.`);
+            if (!match) throw new DataCubeError(`Flow '${name}' not found under provider '${provider}'.`);
 
             const payload = { flow_id: match.id, inputs };
             if (version) payload.version = version;
@@ -332,6 +339,6 @@ export class DataCubeClient {
             return this.execute(payload);
         }
 
-        throw new Error(`Flow not found: name=${name}`);
+        throw new DataCubeError(`Flow not found: name=${name}`);
     }
 }
