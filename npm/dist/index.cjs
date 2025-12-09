@@ -66,7 +66,7 @@ class DataCubeClient {
                     name: "Consulta Cnh Completa"
                 },
                 {
-                    id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
+                    id: "consultasdeveiculos-cnh-parana-completa",
                     provider_name: "Consultas de Veículos",
 		    team_name: null,
                     name: "Consulta Cnh Paraná Completa"
@@ -173,8 +173,30 @@ class DataCubeClient {
 	out += "\n🔧  NATIVE METHODS\n";
 	out += "----------------------------------------------\n";
 	nativeMethods.forEach(m => {
-	    out += `   • ${m.padEnd(22)} → client.${m}\n`;
+	    out += `   • ${m.padEnd(22)} →  client.${m}\n`;
 	});
+	
+	// -------------------------------------------------------
+	// DATACUBE PROVIDER — DESTACADO
+	// -------------------------------------------------------
+	out += "\n\n";
+	out += "⚡  DATACUBE FLOWS (OFFICIAL)\n";
+	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+	out += "     These are the official flows provided by DataCube.\n\n";
+
+	if (providers["datacube"]) {
+	    providers["datacube"].forEach(f => {
+		const left = `   • ${f.name} → `;
+		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
+		const rightB = `client.datacube.${f.slug}(inputs={ ... }, version=null)`;
+		const pad = " ".repeat(left.length + 1);
+
+		out += `${left} ${rightA}\n`;
+		out += `${pad}${rightB}\n\n`;
+	    });
+	} else {
+	    out += "   • No DataCube flows found.\n";
+	}	
 
 	// -------------------------------------------------------
 	// DIRECT FLOWS
@@ -186,7 +208,7 @@ class DataCubeClient {
 	    out += "   • No direct flows found.\n";
 	} else {
 	    directs.forEach(f => {
-		const left = `   • ${f.name} →`;
+		const left = `   • ${f.name} → `;
 		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
 		const rightB = `client.${f.slug}(inputs={ ... }, version=null)`;
 		const pad = " ".repeat(left.length + 1);
@@ -212,7 +234,7 @@ class DataCubeClient {
 	    out += `\n🔸  team: ${team}\n`;
 
 	    teams[team].forEach(f => {
-		const left = `     • ${f.name} →`;
+		const left = `     • ${f.name} → `;
 		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
 		const rightB = `client.teams.${team}.${f.slug}(inputs={ ... }, version=null)`;
 		const pad = " ".repeat(left.length + 1);
@@ -221,26 +243,6 @@ class DataCubeClient {
 		out += `${pad}${rightB}\n\n`;
 	    });
 	});	
-
-	// -------------------------------------------------------
-	// DATACUBE PROVIDER
-	// -------------------------------------------------------
-	out += "\n⚡  DATACUBE FLOWS\n";
-	out += "----------------------------------------------\n";
-
-	if (providers["datacube"]) {
-	    providers["datacube"].forEach(f => {
-		const left = `   • ${f.name} →`;
-		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
-		const rightB = `client.datacube.${f.slug}(inputs={ ... }, version=null)`;
-		const pad = " ".repeat(left.length + 1);
-
-		out += `${left} ${rightA}\n`;
-		out += `${pad}${rightB}\n\n`;
-	    });
-	} else {
-	    out += "   • No DataCube flows found.\n";
-	}
 
 	// -------------------------------------------------------
 	// PROVIDERS
@@ -258,7 +260,7 @@ class DataCubeClient {
 	    out += `\n🔹  ${provider}\n`;
 
 	    providers[provider].forEach(f => {
-		const left = `     • ${f.name} →`;
+		const left = `     • ${f.name} → `;
 		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
 		const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
 		const pad = " ".repeat(left.length + 1);
