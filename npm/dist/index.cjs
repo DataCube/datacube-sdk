@@ -1,3 +1,5 @@
+const { version } = require('../package.json');
+
 class DataCubeError extends Error {
 	constructor(message, context = {}) {
 		super(`⚠️   ${message}`);
@@ -24,7 +26,9 @@ class DataCubeClient {
 			headers: {
 				"X-Api-Key": this.apiKey,
 				"Content-Type": "application/json",
-				"User-Agent": "DataCube-SDK (CJS)",
+				"User-Agent": `DataCube-SDK/${version} (NodeJS)`,
+				"X-Sdk-Version": version,
+				"X-Sdk-Language": "javascript",
 				...(options.headers || {})
 			}
 		});

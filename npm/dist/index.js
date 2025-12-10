@@ -1,3 +1,7 @@
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
+
 /**
  * DataCubeError — erro customizado do SDK
  */
@@ -31,7 +35,9 @@ export class DataCubeClient {
             headers: {
                 "X-Api-Key": this.apiKey,
                 "Content-Type": "application/json",
-                "User-Agent": "DataCube-SDK (ESM)",
+                "User-Agent": `DataCube-SDK/${version} (ESM)`,
+                "X-Sdk-Version": version,
+                "X-Sdk-Language": "javascript",
                 ...(options.headers || {})
             }
         });
