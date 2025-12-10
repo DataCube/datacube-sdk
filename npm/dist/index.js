@@ -147,7 +147,7 @@ export class DataCubeClient {
     getStatus() { return this.request("status"); }
     getUsage() { return this.request("usage"); }
     me() { return this.request("me"); }
-    execute(body) { return this.request("execute", { method: "POST", body: JSON.stringify(body) }); }
+    async execute(body) { return await this.request("execute", { method: "POST", body: JSON.stringify(body) }); }
     executionStatus(id) { return this.request(`execute/${id}`); }
 
     async help() {
@@ -295,9 +295,18 @@ export class DataCubeClient {
 
         // Helper to return executable function
         const exec = (id) => (inputs = {}, version = null) => {
+            // Capture stack trace synchronously
+            const capture = {};
+            Error.captureStackTrace(capture);
+
             const payload = { flow_id: id, inputs };
             if (version) payload.version = version;
-            return this.execute(payload);
+            return this.execute(payload).catch(err => {
+                if (capture.stack) {
+                    err.stack += "\n" + capture.stack.substring(capture.stack.indexOf("\n") + 1);
+                }
+                throw err;
+            });
         };
 
         // 1. Team Flow
