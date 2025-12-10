@@ -22,12 +22,9 @@ export class DataCubeClient {
         this.apiKey = config.apiKey;
         this.flows = [];
 
-        return this.#buildRootProxy();
+        return this.#buildProxy();
     }
 
-    // -------------------------------------------------------------
-    // REQUEST WRAPPER
-    // -------------------------------------------------------------
     async request(path, options = {}) {
         const res = await fetch(this.apiUrl + path, {
             ...options,
@@ -39,44 +36,31 @@ export class DataCubeClient {
             }
         });
 
-        if (!res.ok)
-            throw new DataCubeError(`Request failed  →  ${res.status}`, await res.json());
-
+        if (!res.ok) throw new DataCubeError(`Request failed  →  ${res.status}`, await res.json());
         return res.json();
     }
 
-    // -------------------------------------------------------------
-    // NORMALIZADORES
-    // -------------------------------------------------------------
-    stripAccents(str) {
-        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    // Helper: Normalize
+    _normalize(s) {
+        if (!s) return null;
+        return s.normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, "");
     }
 
-    normalizeProvider(name) {
-        if (!name) return null;
-        return this.stripAccents(name).toLowerCase().replace(/[^a-z0-9]/g, "");
-    }
-
-    normalizeSlug(name) {
-        if (!name) return null;
-
-        let s = this.stripAccents(name).replace(/[^a-zA-Z0-9 ]/g, "");
-        const parts = s.trim().split(/\s+/);
-
-        return parts
-            .map((p, i) => {
-                const lower = p.toLowerCase();
-                return i === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
-            })
+    // Helper: Slugify
+    _slug(s) {
+        if (!s) return null;
+        const clean = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "");
+        return clean.trim().split(/\s+/)
+            .map((p, i) => i === 0 ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
             .join("");
     }
 
-    // -------------------------------------------------------------
-    // FLOWS (simulados, virão da API futuramente)
-    // -------------------------------------------------------------
     getFlows() {
         if (!this.flows.length) {
-            let base = [
+            const base = [
                 {
                     id: "consulta-cnh-completa-1764938995458-45nr1u",
                     provider_name: "DataCube",
@@ -84,7 +68,7 @@ export class DataCubeClient {
                     name: "Consulta Cnh Completa"
                 },
                 {
-                    id: "consulta-cnh-paran-completa-1764938995458-45nr1u",
+                    id: "consultasdeveiculos-cnh-parana-completa",
                     provider_name: "Consultas de Veículos",
                     team_name: null,
                     name: "Consulta Cnh Paraná Completa"
@@ -130,341 +114,209 @@ export class DataCubeClient {
             this.flows = base.map(f => ({
                 id: f.id,
                 name: f.name,
-
-                // Provider
                 provider_name: f.provider_name,
-                provider: this.normalizeProvider(f.provider_name),
-
-                // Team
+                provider: this._normalize(f.provider_name),
                 team_name: f.team_name,
-                team: this.normalizeProvider(f.team_name),
-
-                // Slug
-                slug: this.normalizeSlug(f.name)
+                team: this._normalize(f.team_name),
+                slug: this._slug(f.name)
             }));
         }
         return this.flows;
     }
 
-    // -------------------------------------------------------------
-    // MÉTODOS NATIVOS
-    // -------------------------------------------------------------
     getStatus() { return this.request("status"); }
     getUsage() { return this.request("usage"); }
     me() { return this.request("me"); }
     execute(body) { return this.request("execute", { method: "POST", body: JSON.stringify(body) }); }
     executionStatus(id) { return this.request(`execute/${id}`); }
 
-    // -------------------------------------------------------------
-    // HELP FORMATADO
-    // -------------------------------------------------------------
     async help() {
-	const flows = this.getFlows();
+        const flows = this.getFlows();
 
-	const nativeMethods = [
-	    "getStatus()",
-	    "getUsage()",
-	    "me()",
-	    "execute(body)",
-	    "executionStatus(id)",
-	    "help()"
-	];
+        // Group flows
+        const groups = { datacube: [], personal: [], teams: {}, providers: {} };
+        flows.forEach(f => {
+            if (f.provider === 'datacube') {
+                groups.datacube.push(f);
+            } else if (f.provider) {
+                if (!groups.providers[f.provider_name]) groups.providers[f.provider_name] = [];
+                groups.providers[f.provider_name].push(f);
+            } else if (f.team) {
+                if (!groups.teams[f.team]) groups.teams[f.team] = [];
+                groups.teams[f.team].push(f);
+            } else {
+                groups.personal.push(f);
+            }
+        });
 
-	// Separação
-	const directs = flows.filter(f => !f.provider && !f.team);
-	const providers = {};
-	const teams = {};
+        // Helper to format flow lines
+        const formatFlow = (f, ctx) => {
+            const call = ctx ? `client.${ctx}.${f.slug}` : `client.${f.slug}`;
+            const l = `   • ${f.name} → `;
+            const pad = " ".repeat(l.length + 1);
+            return `${l} client["${f.id}"](inputs={ ... }, version=null)  [recommended]\n` +
+                `${pad}${call}(inputs={ ... }, version=null)\n`;
+        };
 
-	flows.forEach(f => {
-	    if (f.provider) {
-		if (!providers[f.provider]) providers[f.provider] = [];
-		providers[f.provider].push(f);
-	    }
-	    if (f.team) {
-		if (!teams[f.team]) teams[f.team] = [];
-		teams[f.team].push(f);
-	    }
-	});
+        let out = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        out += "📘  DATACUBE SDK — COMMAND REFERENCE\n";
+        out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
 
-	let out = "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-	out += "📘  DATACUBE SDK — COMMAND REFERENCE\n";
-	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        // Native Methods
+        out += "\n🔧  NATIVE METHODS\n";
+        out += "----------------------------------------------\n";
+        const methods = ["getStatus()", "getUsage()", "me()", "execute(body)", "executionStatus(id)", "help()"];
+        methods.forEach(m => {
+            out += `   • ${m.padEnd(22)} →  client.${m}\n`;
+        });
 
-	// -------------------------------------------------------
-	// NATIVE METHODS
-	// -------------------------------------------------------
-	out += "\n🔧  NATIVE METHODS\n";
-	out += "----------------------------------------------\n";
-	nativeMethods.forEach(m => {
-	    out += `   • ${m.padEnd(22)} →  client.${m}\n`;
-	});
+        // DataCube (Official)
+        out += "\n\n";
+        out += "⚡  DATACUBE FLOWS (OFFICIAL)\n";
+        out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        out += "     These are the official flows provided by DataCube.\n\n";
 
-	// -------------------------------------------------------
-	// DATACUBE PROVIDER — DESTACADO
-	// -------------------------------------------------------
-	out += "\n\n";
-	out += "⚡  DATACUBE FLOWS (OFFICIAL)\n";
-	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-	out += "     These are the official flows provided by DataCube.\n\n";
+        if (groups.datacube.length) {
+            groups.datacube.forEach(f => {
+                out += formatFlow(f, "datacube") + "\n";
+            });
+        } else {
+            out += "   • No DataCube flows found.\n";
+        }
 
-	if (providers["datacube"]) {
-	    providers["datacube"].forEach(f => {
-		const left = `   • ${f.name} → `;
-		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
-		const rightB = `client.datacube.${f.slug}(inputs={ ... }, version=null)`;
-		const pad = " ".repeat(left.length + 1);
+        // Personal Flows
+        out += "\n\n🚀  PERSONAL FLOWS\n";
+        out += "----------------------------------------------\n";
+        if (groups.personal.length) {
+            groups.personal.forEach(f => {
+                out += formatFlow(f, null) + "\n";
+            });
+        } else {
+            out += "   • No direct flows found.\n";
+        }
 
-		out += `${left} ${rightA}\n`;
-		out += `${pad}${rightB}\n\n`;
-	    });
-	} else {
-	    out += "   • No DataCube flows found.\n";
-	}
+        // Teams
+        out += "\n\n👥  TEAM FLOWS\n";
+        out += "----------------------------------------------\n";
+        const teams = Object.keys(groups.teams);
+        if (teams.length) {
+            teams.forEach(t => {
+                out += `\n🔸  team: ${t}\n`;
+                groups.teams[t].forEach(f => {
+                    out += formatFlow(f, `teams.${t}`) + "\n";
+                });
+            });
+        } else {
+            out += "   • No team flows found.\n";
+        }
 
-	// -------------------------------------------------------
-	// DIRECT FLOWS
-	// -------------------------------------------------------
-	out += "\n🚀  PERSONAL FLOWS\n";
-	out += "----------------------------------------------\n";
+        // Providers
+        out += "\n\n🏭  PROVIDER FLOWS\n";
+        out += "----------------------------------------------\n";
+        const provs = Object.keys(groups.providers);
+        if (provs.length) {
+            provs.forEach(p => {
+                out += `\n🔹  ${this._normalize(p)}\n`;
+                groups.providers[p].forEach(f => {
+                    out += formatFlow(f, this._normalize(p)) + "\n";
+                });
+            });
+        } else {
+            out += "   • No providers found.\n";
+        }
 
-	if (directs.length === 0) {
-	    out += "   • No direct flows found.\n";
-	} else {
-	    directs.forEach(f => {
-		const left = `   • ${f.name} → `;
-		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
-		const rightB = `client.${f.slug}(inputs={ ... }, version=null)`;
-		const pad = " ".repeat(left.length + 1);
+        out += "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        out += "💡 RECOMMENDATION: Whenever possible, call flows by their ID.\n";
+        out += "   This prevents your code from breaking if the flow name changes.\n";
+        out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
 
-		out += `${left} ${rightA}\n`;
-		out += `${pad}${rightB}\n\n`;
-	    });
-	}
-
-	// -------------------------------------------------------
-	// TEAM FLOWS
-	// -------------------------------------------------------
-	out += "\n👥  TEAM FLOWS\n";
-	out += "----------------------------------------------\n";
-
-	const teamKeys = Object.keys(teams);
-
-	if (teamKeys.length === 0) {
-	    out += "   • No team flows found.\n";
-	}
-
-	teamKeys.forEach(team => {
-	    out += `\n🔸  team: ${team}\n`;
-
-	    teams[team].forEach(f => {
-		const left = `     • ${f.name} → `;
-		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
-		const rightB = `client.teams.${team}.${f.slug}(inputs={ ... }, version=null)`;
-		const pad = " ".repeat(left.length + 1);
-
-		out += `${left} ${rightA}\n`;
-		out += `${pad}${rightB}\n\n`;
-	    });
-	});
-
-	// -------------------------------------------------------
-	// PROVIDERS
-	// -------------------------------------------------------
-	out += "\n🏭  PROVIDER FLOWS\n";
-	out += "----------------------------------------------\n";
-
-	const otherProviders = Object.keys(providers).filter(p => p !== "datacube");
-
-	if (otherProviders.length === 0) {
-	    out += "   • No providers found.\n";
-	}
-
-	otherProviders.forEach(provider => {
-	    out += `\n🔹  ${provider}\n`;
-
-	    providers[provider].forEach(f => {
-		const left = `     • ${f.name} → `;
-		const rightA = `client["${f.id}"](inputs={ ... }, version=null)  [recommended]`;
-		const rightB = `client.${provider}.${f.slug}(inputs={ ... }, version=null)`;
-		const pad = " ".repeat(left.length + 1);
-
-		out += `${left} ${rightA}\n`;
-		out += `${pad}${rightB}\n\n`;
-	    });
-	});
-
-	// -------------------------------------------------------
-	// FOOTER
-	// -------------------------------------------------------
-	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-	out += "💡 RECOMMENDATION: Whenever possible, call flows by their ID.\n";
-	out += "   This prevents your code from breaking if the flow name changes.\n";
-	out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
-
-	console.log(out);
-	return out;
+        console.log(out);
+        return out;
     }
 
-
-    // -------------------------------------------------------------
-    // ROOT PROXY
-    // -------------------------------------------------------------
-    #buildRootProxy() {
-        const self = this;
-
+    #buildProxy() {
         return new Proxy(this, {
-            get(target, prop) {
+            get: (target, prop) => {
                 if (prop in target) return target[prop];
-
-                if (prop === "teams") return self.#buildTeamsRootProxy();
-
-                return self.#buildProviderOrDirectProxy(String(prop));
+                if (prop === "teams") return this.#buildTeamRoot();
+                return this.#resolve(null, String(prop)) || this.#buildProviderProxy(String(prop));
             }
         });
     }
 
-    #buildTeamsRootProxy() {
-        const self = this;
-
+    #buildTeamRoot() {
         return new Proxy({}, {
-            get(_, teamSlug) {
-                return self.#buildTeamProxy(String(teamSlug));
+            get: (_, team) => this.#buildTeamProxy(String(team))
+        });
+    }
+
+    #buildTeamProxy(team) {
+        return new Proxy(() => { }, {
+            get: (_, flow) => this.#resolve(team, String(flow), true)
+        });
+    }
+
+    #buildProviderProxy(provider) {
+        const handler = (flow) => this.#resolve(provider, String(flow));
+        return new Proxy(() => { }, {
+            get: (_, flow) => handler(flow),
+            apply: (_, __, [inputs, ver]) => {
+                return this.#resolve(null, provider)(inputs, ver);
             }
         });
     }
 
-    // -------------------------------------------------------------
-    // PROVIDER / DIRECT
-    // -------------------------------------------------------------
-    #buildProviderOrDirectProxy(name) {
+    #resolve(provider, name, isTeam = false) {
         const flows = this.getFlows();
-        const normalize = v => v?.toLowerCase().replace(/_/g, "-");
+        const norm = v => v?.toLowerCase().replace(/_/g, "-");
 
-        const byId = flows.find(f => normalize(f.id) === normalize(name));
-        if (byId) {
-            return (inputs = {}, version = null) =>
-                this.#resolveDynamicCall(null, byId.id, inputs, version);
+        const nName = norm(name);
+        const nProv = norm(provider);
+
+        // Helper to return executable function
+        const exec = (id) => (inputs = {}, version = null) => {
+            const payload = { flow_id: id, inputs };
+            if (version) payload.version = version;
+            return this.execute(payload);
+        };
+
+        // 1. Team Flow
+        if (isTeam) {
+            const match = flows.find(f =>
+                f.team &&
+                norm(f.team) === nProv &&
+                norm(f.slug) === nName
+            );
+            if (match) return exec(match.id);
+            throw new DataCubeError(`Flow '${name}' not found under team '${provider}'`);
         }
 
-        const direct = flows.filter(f =>
-            !f.provider && !f.team && normalize(f.slug) === normalize(name)
-        );
-
-        if (direct.length === 1) {
-            return (inputs = {}, version = null) =>
-                this.#resolveDynamicCall(null, direct[0].slug, inputs, version);
-        }
-
-        if (direct.length > 1) {
-            const newest = direct.sort((a, b) => b.id.localeCompare(a.id))[0];
-            return (inputs = {}, version = null) =>
-                this.#resolveDynamicCall(null, newest.slug, inputs, version);
-        }
-
-        return this.#buildProviderProxy(name);
-    }
-
-    #buildProviderProxy(providerName) {
-        const self = this;
-
-        return new Proxy(function () {}, {
-            get(_, subProp) {
-                return (inputs = {}, version = null) =>
-                    self.#resolveDynamicCall(providerName, String(subProp), inputs, version);
-            },
-            apply(_, __, args) {
-                const inputs = args[0] || {};
-                const version = args[1] || null;
-                return self.#resolveDynamicCall(null, providerName, inputs, version);
-            }
-        });
-    }
-
-    // -------------------------------------------------------------
-    // TEAM PROXY
-    // -------------------------------------------------------------
-    #buildTeamProxy(teamSlug) {
-        const self = this;
-
-        return new Proxy(function () {}, {
-            get(_, flowSlug) {
-                return (inputs = {}, version = null) =>
-                    self.#resolveDynamicCallForTeam(teamSlug, String(flowSlug), inputs, version);
-            }
-        });
-    }
-
-    // -------------------------------------------------------------
-    // FLOW RESOLUTION
-    // -------------------------------------------------------------
-    #resolveDynamicCall(provider, name, inputs, version = null) {
-        const flows = this.getFlows();
-        const normalize = v => v?.toLowerCase().replace(/_/g, "-");
-
-        const normName = normalize(name);
-        const normProvider = normalize(provider);
-
+        // 2. Provider Flow
         if (provider) {
             const match = flows.find(f =>
                 f.provider &&
-                normalize(f.provider) === normProvider &&
-                (normalize(f.slug) === normName || normalize(f.id) === normName)
+                norm(f.provider) === nProv &&
+                (norm(f.slug) === nName || norm(f.id) === nName)
             );
-
-            if (!match) throw new DataCubeError(`Flow '${name}' not found under provider '${provider}'`);
-
-            const payload = { flow_id: match.id, inputs };
-            if (version) payload.version = version;
-
-            return this.execute(payload);
+            if (match) return exec(match.id);
+            throw new DataCubeError(`Flow '${name}' not found under provider '${provider}'`);
         }
 
+        // 3. Direct/Personal Flow or Global ID
         const direct = flows.filter(f =>
             !f.provider &&
             !f.team &&
-            (normalize(f.slug) === normName || normalize(f.id) === normName)
+            (norm(f.slug) === nName || norm(f.id) === nName)
         );
 
         if (direct.length) {
             const newest = direct.sort((a, b) => b.id.localeCompare(a.id))[0];
-
-            const payload = { flow_id: newest.id, inputs };
-            if (version) payload.version = version;
-
-            return this.execute(payload);
+            return exec(newest.id);
         }
 
-        const idMatch = flows.find(f => normalize(f.id) === normName);
-        if (idMatch) {
-            const payload = { flow_id: idMatch.id, inputs };
-            if (version) payload.version = version;
+        const idMatch = flows.find(f => norm(f.id) === nName);
+        if (idMatch) return exec(idMatch.id);
 
-            return this.execute(payload);
-        }
-
-        throw new DataCubeError(`Flow not found: name=${name}`);
-    }
-
-    #resolveDynamicCallForTeam(teamSlug, flowSlug, inputs, version) {
-        const flows = this.getFlows();
-        const normalize = v => v?.toLowerCase().replace(/_/g, "-");
-
-        const team = normalize(teamSlug);
-        const slug = normalize(flowSlug);
-
-        const match = flows.find(f =>
-            f.team &&
-            normalize(f.team) === team &&
-            normalize(f.slug) === slug
-        );
-
-        if (!match) {
-            throw new DataCubeError(`Flow '${flowSlug}' not found under team '${teamSlug}'`);
-        }
-
-        const payload = { flow_id: match.id, inputs };
-        if (version) payload.version = version;
-
-        return this.execute(payload);
+        return null;
     }
 }
