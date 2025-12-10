@@ -1,11 +1,13 @@
 const { version } = require('../package.json');
 
 class DataCubeError extends Error {
-	constructor(message, context = {}) {
+	constructor(message, context = {}, stackStartFn = null) {
 		super(`⚠️   ${message}`);
 		this.name = "DataCubeError";
 		this.context = context;
-		if (Error.captureStackTrace) {
+		if (stackStartFn && Error.captureStackTrace) {
+			Error.captureStackTrace(this, stackStartFn);
+		} else if (Error.captureStackTrace) {
 			Error.captureStackTrace(this, DataCubeError);
 		}
 	}
@@ -246,13 +248,12 @@ class DataCubeClient {
 	}
 
 	#buildProxy() {
-		return new Proxy(this, {
-			get: (target, prop) => {
-				if (prop in target) return target[prop];
-				if (prop === "teams") return this.#buildTeamRoot();
-				return this.#resolve(null, String(prop)) || this.#buildProviderProxy(String(prop));
-			}
-		});
+		const getTrap = (target, prop) => {
+			if (prop in target) return target[prop];
+			if (prop === "teams") return this.#buildTeamRoot();
+			return this.#resolve(null, String(prop), false, getTrap) || this.#buildProviderProxy(String(prop));
+		};
+		return new Proxy(this, { get: getTrap });
 	}
 
 	#buildTeamRoot() {
@@ -262,22 +263,25 @@ class DataCubeClient {
 	}
 
 	#buildTeamProxy(team) {
-		return new Proxy(() => { }, {
-			get: (_, flow) => this.#resolve(team, String(flow), true)
-		});
+		const getTrap = (_, flow) => this.#resolve(team, String(flow), true, getTrap);
+		return new Proxy(() => { }, { get: getTrap });
 	}
 
 	#buildProviderProxy(provider) {
-		const handler = (flow) => this.#resolve(provider, String(flow));
+		const getTrap = (_, flow) => this.#resolve(provider, String(flow), false, getTrap);
+		const applyTrap = (_, __, [inputs, ver]) => {
+			const fn = this.#resolve(null, provider, false, applyTrap);
+			if (!fn) throw new DataCubeError(`'${provider}' is not a known flow.`, {}, applyTrap);
+			return fn(inputs, ver);
+		};
+
 		return new Proxy(() => { }, {
-			get: (_, flow) => handler(flow),
-			apply: (_, __, [inputs, ver]) => {
-				return this.#resolve(null, provider)(inputs, ver);
-			}
+			get: getTrap,
+			apply: applyTrap
 		});
 	}
 
-	#resolve(provider, name, isTeam = false) {
+	#resolve(provider, name, isTeam = false, stackStartFn = null) {
 		const flows = this.getFlows();
 		const norm = v => v?.toLowerCase().replace(/_/g, "-");
 
@@ -285,21 +289,26 @@ class DataCubeClient {
 		const nProv = norm(provider);
 
 		// Helper to return executable function
-		const exec = (id) => (inputs = {}, version = null) => {
-			// Capture stack trace synchronously to preserve caller context
-			const capture = {};
-			Error.captureStackTrace(capture);
+		const exec = (id, fnName) => {
+			const wrapper = (inputs = {}, version = null) => {
+				// Capture stack trace synchronously to preserve caller context
+				const capture = {};
+				Error.captureStackTrace(capture);
 
-			const payload = { flow_id: id, inputs };
-			if (version) payload.version = version;
-			return this.execute(payload).catch(err => {
-				if (capture.stack) {
-					// Append captured stack frames (skipping the first "Error")
-					// This ensures the user sees the line number where they called the SDK function
-					err.stack += "\n" + capture.stack.substring(capture.stack.indexOf("\n") + 1);
-				}
-				throw err;
-			});
+				const payload = { flow_id: id, inputs };
+				if (version) payload.version = version;
+				return this.execute(payload).catch(err => {
+					if (capture.stack) {
+						err.stack += "\n" + capture.stack.substring(capture.stack.indexOf("\n") + 1);
+					}
+					throw err;
+				});
+			};
+
+			// Set the function name for better stack traces
+			// e.g. client.consultas.foo -> client_consultas_foo
+			Object.defineProperty(wrapper, "name", { value: fnName });
+			return wrapper;
 		};
 
 		// 1. Team Flow
@@ -309,8 +318,8 @@ class DataCubeClient {
 				norm(f.team) === nProv &&
 				norm(f.slug) === nName
 			);
-			if (match) return exec(match.id);
-			throw new DataCubeError(`Flow '${name}' not found under team '${provider}'`);
+			if (match) return exec(match.id, `client.teams.${nProv}.${nName}`);
+			throw new DataCubeError(`Flow '${name}' not found under team '${provider}'`, {}, stackStartFn);
 		}
 
 		// 2. Provider Flow
@@ -320,8 +329,8 @@ class DataCubeClient {
 				norm(f.provider) === nProv &&
 				(norm(f.slug) === nName || norm(f.id) === nName)
 			);
-			if (match) return exec(match.id);
-			throw new DataCubeError(`Flow '${name}' not found under provider '${provider}'`);
+			if (match) return exec(match.id, `client.${nProv}.${nName}`);
+			throw new DataCubeError(`Flow '${name}' not found under provider '${provider}'`, {}, stackStartFn);
 		}
 
 		// 3. Direct/Personal Flow or Global ID
@@ -333,11 +342,11 @@ class DataCubeClient {
 
 		if (direct.length) {
 			const newest = direct.sort((a, b) => b.id.localeCompare(a.id))[0];
-			return exec(newest.id);
+			return exec(newest.id, `client.${nName}`);
 		}
 
 		const idMatch = flows.find(f => norm(f.id) === nName);
-		if (idMatch) return exec(idMatch.id);
+		if (idMatch) return exec(idMatch.id, `client["${idMatch.id}"]`);
 
 		return null;
 	}
