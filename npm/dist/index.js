@@ -30,19 +30,33 @@ export class DataCubeClient {
     }
 
     async request(path, options = {}) {
-        const res = await fetch(this.apiUrl + path, {
-            ...options,
-            headers: {
-                "X-Api-Key": this.apiKey,
-                "Content-Type": "application/json",
-                "User-Agent": `DataCube-SDK/${version} (ESM)`,
-                "X-Sdk-Version": version,
-                "X-Sdk-Language": "javascript",
-                ...(options.headers || {})
-            }
-        });
+        const url = this.apiUrl + path;
+        const headers = {
+            "X-Api-Key": this.apiKey,
+            "Content-Type": "application/json",
+            "User-Agent": `DataCube-SDK/${version} (ESM)`,
+            "X-Sdk-Version": version,
+            "X-Sdk-Language": "javascript",
+            ...(options.headers || {})
+        };
 
-        if (!res.ok) throw new DataCubeError(`Request failed  →  ${res.status}`, await res.json());
+        const res = await fetch(url, { ...options, headers });
+
+        if (!res.ok) {
+            const data = await res.json();
+            const safeKey = this.apiKey ? `${this.apiKey.slice(0, 8)}...${this.apiKey.slice(-4)}` : "MISSING";
+
+            let payload = options.body;
+            try { payload = JSON.parse(payload); } catch (e) { }
+
+            const debugHeaders = { ...headers, "X-Api-Key": safeKey };
+
+            throw new DataCubeError(`Request failed  →  ${res.status}`, {
+                request: { url, payload, headers: debugHeaders },
+                response: data
+            });
+        }
+
         return res.json();
     }
 
