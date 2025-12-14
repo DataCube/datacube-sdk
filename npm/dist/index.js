@@ -194,7 +194,7 @@ export class DataCubeClient {
 
         // DataCube (Official)
         out += "\n\n";
-        out += "🏆  DATACUBE FLOWS (OFFICIAL)\n";
+        out += "🚀  DATACUBE FLOWS (OFFICIAL)\n";
         out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         out += "     These are the official flows provided by DataCube.\n\n";
 
@@ -207,7 +207,7 @@ export class DataCubeClient {
         }
 
         // Personal Flows
-        out += "\n\n🚀  PERSONAL FLOWS\n";
+        out += "\n\n👤  PERSONAL FLOWS\n";
         out += "----------------------------------------------\n";
         if (groups.personal.length) {
             groups.personal.forEach(f => {
