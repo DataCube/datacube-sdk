@@ -4,7 +4,7 @@
     "module": "ES2020",
     "allowJs": true,
     "declaration": true,
-    "outDir": "dist",
+    "noEmit": true,
     "moduleResolution": "Node"
   },
   "include": [
