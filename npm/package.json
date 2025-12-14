@@ -12,14 +12,14 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc && node scripts/build-cjs.cjs"
   },
-  "dependencies": {
-    "axios": "^1.6.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.3.0"
   }
 }
-
