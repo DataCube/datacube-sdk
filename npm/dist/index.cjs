@@ -34,7 +34,7 @@ class DataCubeClient {
         const headers = {
             "X-Api-Key": this.apiKey,
             "Content-Type": "application/json",
-            "User-Agent": `DataCube-SDK/${version} (ESM)`,
+            "User-Agent": `DataCube-SDK/${version} (CJS)`,
             "X-Sdk-Version": version,
             "X-Sdk-Language": "javascript",
             ...(options.headers || {})
