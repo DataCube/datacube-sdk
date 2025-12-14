@@ -194,7 +194,7 @@ export class DataCubeClient {
 
         // DataCube (Official)
         out += "\n\n";
-        out += "⚡  DATACUBE FLOWS (OFFICIAL)\n";
+        out += "🏆  DATACUBE FLOWS (OFFICIAL)\n";
         out += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         out += "     These are the official flows provided by DataCube.\n\n";
 
