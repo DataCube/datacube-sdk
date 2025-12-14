@@ -11,4 +11,5 @@ export declare class DataCubeClient {
     me(): Promise<any>;
     execute(body: any): Promise<any>;
     executionStatus(id: string): Promise<any>;
+    help(): Promise<string>;
 }
