@@ -1,3 +1,6 @@
 {
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "datacube-sdk": "^1.0.0"
+  }
 }

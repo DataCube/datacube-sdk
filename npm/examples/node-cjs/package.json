@@ -1,1 +1,7 @@
-{}
+{
+    "name": "datacube-cjs-example",
+    "version": "1.0.0",
+    "dependencies": {
+        "datacube-sdk": "^1.0.0"
+    }
+}

@@ -4,6 +4,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
+    "datacube-sdk": "^1.0.0",
     "tsx": "^4.21.0"
   }
 }

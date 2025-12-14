@@ -2,6 +2,8 @@
   "name": "datacube-js-example",
   "version": "1.0.0",
   "type": "commonjs",
-  "main": "index.js"
+  "main": "index.js",
+  "dependencies": {
+    "datacube-sdk": "^1.0.0"
+  }
 }
-
