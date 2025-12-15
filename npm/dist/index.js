@@ -24,7 +24,7 @@ export class DataCubeError extends Error {
  */
 export class DataCubeClient {
     constructor(config) {
-        this.apiUrl = "https://api.datacube.com.br/v1/";
+        this.apiUrl = config.apiUrl ? config.apiUrl : "https://api.datacube.com.br/v1/";
         this.apiKey = config.apiKey;
         this.flows = [];
 
